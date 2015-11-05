@@ -22,22 +22,22 @@ public class Network {
 
     private HashMap<Integer, Node> nodes;
 
-    private HashMap<Integer, ArrayList<Action>> specialMessages;
+    private HashMap<Integer, ArrayList<Action>> roundActions;
 
     // Code to call methods for parsing the input file, initiating the system and producing the log can be added here.
     public Network() {
 
         this.nodes = new HashMap<>();
         this.messagesToDeliver = new HashMap<>();
-        this.specialMessages = new HashMap<>();
+        this.roundActions = new HashMap<>();
 
         try {
-            this.parseFile("input_simple.txt");
+            this.parseFile("input.txt");
         } catch (IOException e) {
             e.printStackTrace();
         }
 
-        this.prepareInitialMessages();
+        // this.prepareInitialMessages();
         this.deliverMessages();
     }
 
@@ -92,12 +92,12 @@ public class Network {
 
                         // Add the action to the list of messages for the specific round
                         round = Integer.valueOf(parts[1]);
-                        if (this.specialMessages.containsKey(round)){
-                            this.specialMessages.get(round).add(action);
+                        if (this.roundActions.containsKey(round)){
+                            this.roundActions.get(round).add(action);
                         }else{
                             ArrayList<Action> actions = new ArrayList<>();
                             actions.add(action);
-                            this.specialMessages.put(round, actions);
+                            this.roundActions.put(round, actions);
                         }
 
                         break;
@@ -112,12 +112,12 @@ public class Network {
 
                         // Add the action to the list of messages for the specific round
                         round = Integer.valueOf(parts[1]);
-                        if (this.specialMessages.containsKey(round)){
-                            this.specialMessages.get(round).add(action);
+                        if (this.roundActions.containsKey(round)){
+                            this.roundActions.get(round).add(action);
                         }else{
                             ArrayList<Action> actions = new ArrayList<>();
                             actions.add(action);
-                            this.specialMessages.put(round, actions);
+                            this.roundActions.put(round, actions);
                         }
 
                         break;
@@ -187,8 +187,6 @@ public class Network {
         }
     }
 
-
-
     public synchronized void deliverMessages() {
 		/*
 		At each round, the network delivers all the messages that it has collected from the nodes.
@@ -198,16 +196,39 @@ public class Network {
 
         while (true) {
 
+            this.round++;
+            System.out.println(String.format("-- Round %d starting", this.round));
+
+            // Check if there's any action to take in this round
+            ArrayList<Action> actions = this.roundActions.get(round);
+
+            if (actions != null){
+                for (Action action : actions){
+
+                    switch(action.getType()){
+
+                        case MessageCreator.ELECTION_TAG:
+                            for (Node node : action.getNodes()){
+                                node.startLeaderElection();
+                            }
+
+                            break;
+                    }
+                }
+
+                this.roundActions.remove(round);
+            }
+
             // Collect messages from each node
             for (Map.Entry<Integer, Node> entry : this.nodes.entrySet()) {
                 Node node = entry.getValue();
-                for (String message : node.incomingMessages) {
-                    this.addMessage(entry.getKey(), message);
+                if (node.incomingMessages.size() != 0){
+                    this.addMessage(node.getNodeId(), node.incomingMessages.get(0));
                 }
             }
 
             // Break the loop if there are no more messages to deliver
-            if (this.messagesToDeliver.size() == 0){
+            if (this.messagesToDeliver.size() == 0 && this.roundActions.size() == 0){
                 break;
             }
 
@@ -219,9 +240,19 @@ public class Network {
                 Node sender = this.nodes.get(senderId);
                 String message = (String) messagesToDeliverPair.getValue();
 
-                Node neighbour = sender.getNextNode();
                 sender.sendMessage(message);
-                neighbour.receiveMessage(message);
+            }
+
+            // Send messages to "next" from each node
+            it = this.messagesToDeliver.entrySet().iterator();
+            while(it.hasNext()) {
+                Map.Entry messagesToDeliverPair = (Map.Entry) it.next();
+                Integer senderId = (Integer) messagesToDeliverPair.getKey();
+                Node sender = this.nodes.get(senderId);
+                String message = (String) messagesToDeliverPair.getValue();
+
+                Node nextNeighbour = sender.getNextNode();
+                nextNeighbour.receiveMessage(message);
 
                 it.remove();
             }

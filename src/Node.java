@@ -62,14 +62,15 @@ public class Node extends Thread {
     // Method that implements the reception of an incoming message by a node
     public void receiveMessage(String message) {
 
-        String[] parts = message.split("\\s");
-        String messageType = parts[0];
+        String messageType = MessageCreator.getMessageType(message);
 
         switch (messageType){
             case MessageCreator.ELECTION_TAG:
 
-                int electionInitializerId = Integer.valueOf(parts[1]);
-                int incomingId = Integer.valueOf(parts[2]);
+                int electionInitializerId = MessageCreator.getInitializerIdFromElectMessage(message);
+                int incomingId = MessageCreator.getMaximumIdFromElectMessage(message);
+
+                System.out.println(String.format("Node %d received election message with id %d. Initailizer: %d", this.id, incomingId, electionInitializerId));
 
                 if (!this.participant){
 
@@ -89,7 +90,7 @@ public class Node extends Thread {
                         this.leader = true;
                         this.incomingMessages.add(MessageCreator.createLeaderMessage(electionInitializerId, this.id));
 
-                        System.out.println(String.format("Leader with id %d elected", this.id));
+                        System.out.println(String.format("Node %d is ELECTED as leader. Initailizer: %d", this.id, electionInitializerId));
                         return;
                     }
 
@@ -103,7 +104,10 @@ public class Node extends Thread {
 
             case MessageCreator.LEADER_TAG:
 
+                int initializerId = MessageCreator.getInitializerIdFromLeaderMessage(message);
                 int leaderId = MessageCreator.getLeaderIdFromLeaderMessage(message);
+
+                System.out.println(String.format("Node %d received leader message with id %d. Initailizer: %d", this.id, leaderId, initializerId));
 
                 // If the leader message hasn't made a full round yet, forward it
                 if(this.id != leaderId){
@@ -123,5 +127,14 @@ public class Node extends Thread {
 		The remainder of the logic will be implemented in the network class.
 		*/
         this.incomingMessages.remove(message);
+
+        String messageType = MessageCreator.getMessageType(message);
+        if (messageType.equals(MessageCreator.ELECTION_TAG)){
+            this.participant = true;
+        }
+    }
+
+    public void startLeaderElection(){
+        this.incomingMessages.add(String.format("%s %d %d", MessageCreator.ELECTION_TAG, this.id, this.id));
     }
 }
