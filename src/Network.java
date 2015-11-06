@@ -24,6 +24,8 @@ public class Network {
 
     private HashMap<Integer, ArrayList<Action>> roundActions;
 
+    private Logger logger;
+
     // Code to call methods for parsing the input file, initiating the system and producing the log can be added here.
     public Network() {
 
@@ -36,6 +38,8 @@ public class Network {
         } catch (IOException e) {
             e.printStackTrace();
         }
+
+        this.logger = Logger.getInstance();
 
         // this.prepareInitialMessages();
         this.deliverMessages();
@@ -69,9 +73,9 @@ public class Network {
 
             while ((line = br.readLine()) != null) {
 
+                // Decide how we should process the line
                 String[] parts = line.split("\\s");
 
-                // Decide how we should process the line
                 switch(parts[0]){
 
                     case "Node_id":
@@ -197,7 +201,7 @@ public class Network {
         while (true) {
 
             this.round++;
-            System.out.println(String.format("-- Round %d starting", this.round));
+            this.logger.log(String.format("-- Round %d starting", this.round));
 
             // Check if there's any action to take in this round
             ArrayList<Action> actions = this.roundActions.get(round);
@@ -229,13 +233,14 @@ public class Network {
 
             // Break the loop if there are no more messages to deliver
             if (this.messagesToDeliver.size() == 0 && this.roundActions.size() == 0){
+                this.logger.closeWriter();
                 break;
             }
 
             // Send messages to "next" from each node
-            Iterator it = this.messagesToDeliver.entrySet().iterator();
-            while(it.hasNext()) {
-                Map.Entry messagesToDeliverPair = (Map.Entry) it.next();
+            Iterator iterator = this.messagesToDeliver.entrySet().iterator();
+            while(iterator.hasNext()) {
+                Map.Entry messagesToDeliverPair = (Map.Entry) iterator.next();
                 Integer senderId = (Integer) messagesToDeliverPair.getKey();
                 Node sender = this.nodes.get(senderId);
                 String message = (String) messagesToDeliverPair.getValue();
@@ -244,9 +249,9 @@ public class Network {
             }
 
             // Send messages to "next" from each node
-            it = this.messagesToDeliver.entrySet().iterator();
-            while(it.hasNext()) {
-                Map.Entry messagesToDeliverPair = (Map.Entry) it.next();
+            iterator = this.messagesToDeliver.entrySet().iterator();
+            while(iterator.hasNext()) {
+                Map.Entry messagesToDeliverPair = (Map.Entry) iterator.next();
                 Integer senderId = (Integer) messagesToDeliverPair.getKey();
                 Node sender = this.nodes.get(senderId);
                 String message = (String) messagesToDeliverPair.getValue();
@@ -254,7 +259,7 @@ public class Network {
                 Node nextNeighbour = sender.getNextNode();
                 nextNeighbour.receiveMessage(message);
 
-                it.remove();
+                iterator.remove();
             }
         }
     }

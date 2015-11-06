@@ -1,3 +1,4 @@
+import java.util.ArrayList;
 
 public class MessageCreator {
 
@@ -13,32 +14,27 @@ public class MessageCreator {
         return String.format("%s %d %d", LEADER_TAG, initializerId, leaderId);
     }
 
-    public static String getMessageType(String message){
-        String[] parts = message.split("\\s");
+    public static String getMessageType(String[] parts){
 
         return parts[0];
     }
 
-    public static int getInitializerIdFromElectMessage(String message){
-        String[] parts = message.split("\\s");
+    public static int getInitializerIdFromElectMessage(String[] parts){
 
         return Integer.valueOf(parts[1]);
     }
 
-    public static int getMaximumIdFromElectMessage(String message){
-        String[] parts = message.split("\\s");
+    public static int getMaximumIdFromElectMessage(String[] parts){
 
         return Integer.valueOf(parts[2]);
     }
 
-    public static int getLeaderIdFromLeaderMessage(String message){
-        String[] parts = message.split("\\s");
+    public static int getLeaderIdFromLeaderMessage(String[] parts){
 
         return Integer.valueOf(parts[2]);
     }
 
-    public static int getInitializerIdFromLeaderMessage(String message){
-        String[] parts = message.split("\\s");
+    public static int getInitializerIdFromLeaderMessage(String[] parts){
 
         return Integer.valueOf(parts[1]);
     }

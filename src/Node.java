@@ -1,5 +1,3 @@
-import sun.plugin2.message.Message;
-
 import java.util.*;
 
 // Class to represent a node. Each node must run on its own thread.
@@ -8,6 +6,8 @@ public class Node extends Thread {
     private int id;
     private boolean participant = false;
     private boolean leader = false;
+
+    private Logger logger;
 
     private Node nextNode;
 
@@ -25,6 +25,8 @@ public class Node extends Thread {
 
         this.neighbours = new ArrayList<>();
         this.incomingMessages = new ArrayList<>();
+
+        this.logger = Logger.getInstance();
     }
 
     public int getNodeId() {
@@ -62,15 +64,16 @@ public class Node extends Thread {
     // Method that implements the reception of an incoming message by a node
     public void receiveMessage(String message) {
 
-        String messageType = MessageCreator.getMessageType(message);
+        String[] parts = message.split("\\s");
+        String messageType = MessageCreator.getMessageType(parts);
 
         switch (messageType){
             case MessageCreator.ELECTION_TAG:
 
-                int electionInitializerId = MessageCreator.getInitializerIdFromElectMessage(message);
-                int incomingId = MessageCreator.getMaximumIdFromElectMessage(message);
+                int electionInitializerId = MessageCreator.getInitializerIdFromElectMessage(parts);
+                int incomingId = MessageCreator.getMaximumIdFromElectMessage(parts);
 
-                System.out.println(String.format("Node %d received election message with id %d. Initailizer: %d", this.id, incomingId, electionInitializerId));
+                this.logger.log(String.format("Node %d received election message with id %d. Initailizer: %d", this.id, incomingId, electionInitializerId));
 
                 if (!this.participant){
 
@@ -90,7 +93,7 @@ public class Node extends Thread {
                         this.leader = true;
                         this.incomingMessages.add(MessageCreator.createLeaderMessage(electionInitializerId, this.id));
 
-                        System.out.println(String.format("Node %d is ELECTED as leader. Initailizer: %d", this.id, electionInitializerId));
+                        this.logger.log(String.format("Node %d is ELECTED as leader. Initailizer: %d", this.id, electionInitializerId));
                         return;
                     }
 
@@ -104,10 +107,10 @@ public class Node extends Thread {
 
             case MessageCreator.LEADER_TAG:
 
-                int initializerId = MessageCreator.getInitializerIdFromLeaderMessage(message);
-                int leaderId = MessageCreator.getLeaderIdFromLeaderMessage(message);
+                int initializerId = MessageCreator.getInitializerIdFromLeaderMessage(parts);
+                int leaderId = MessageCreator.getLeaderIdFromLeaderMessage(parts);
 
-                System.out.println(String.format("Node %d received leader message with id %d. Initailizer: %d", this.id, leaderId, initializerId));
+                this.logger.log(String.format("Node %d received leader message with id %d. Initailizer: %d", this.id, leaderId, initializerId));
 
                 // If the leader message hasn't made a full round yet, forward it
                 if(this.id != leaderId){
@@ -128,7 +131,8 @@ public class Node extends Thread {
 		*/
         this.incomingMessages.remove(message);
 
-        String messageType = MessageCreator.getMessageType(message);
+        String[] parts = message.split("\\s");
+        String messageType = MessageCreator.getMessageType(parts);
         if (messageType.equals(MessageCreator.ELECTION_TAG)){
             this.participant = true;
         }
