@@ -26,6 +26,7 @@ public class Logger {
 
     public void log(String line){
         try {
+            System.out.println(line);
             this.writer.write(line + "\n");
         } catch (IOException e) {
             System.out.println("Unable to write to file: " + e.toString());

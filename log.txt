@@ -34,8 +34,8 @@ Node 3 received election message with id 20. Initailizer: 3
 Node 7 received election message with id 12. Initailizer: 12
 -- Round 17 starting
 Node 20 received election message with id 20. Initailizer: 3
-Node 20 is ELECTED as leader. Initailizer: 3
 Node 18 received election message with id 12. Initailizer: 12
+Node 20 is ELECTED as leader. Initailizer: 3
 -- Round 18 starting
 Node 12 received leader message with id 20. Initailizer: 3
 -- Round 19 starting
@@ -107,21 +107,22 @@ Node 3 received election message with id 20. Initailizer: 18
 Node 20 received election message with id 20. Initailizer: 18
 Node 20 is ELECTED as leader. Initailizer: 18
 -- Round 64 starting
-Node 12 received leader message with id 20. Initailizer: 18
 -- Round 65 starting
-Node 6 received leader message with id 20. Initailizer: 18
+Node 12 received leader message with id 20. Initailizer: 18
 -- Round 66 starting
-Node 7 received leader message with id 20. Initailizer: 18
+Node 6 received leader message with id 20. Initailizer: 18
 -- Round 67 starting
-Node 18 received leader message with id 20. Initailizer: 18
+Node 7 received leader message with id 20. Initailizer: 18
 -- Round 68 starting
-Node 16 received leader message with id 20. Initailizer: 18
+Node 18 received leader message with id 20. Initailizer: 18
 -- Round 69 starting
-Node 15 received leader message with id 20. Initailizer: 18
+Node 16 received leader message with id 20. Initailizer: 18
 -- Round 70 starting
-Node 1 received leader message with id 20. Initailizer: 18
+Node 15 received leader message with id 20. Initailizer: 18
 -- Round 71 starting
-Node 3 received leader message with id 20. Initailizer: 18
+Node 1 received leader message with id 20. Initailizer: 18
 -- Round 72 starting
-Node 20 received leader message with id 20. Initailizer: 18
+Node 3 received leader message with id 20. Initailizer: 18
 -- Round 73 starting
+Node 20 received leader message with id 20. Initailizer: 18
+-- Round 74 starting
