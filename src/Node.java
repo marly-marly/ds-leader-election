@@ -15,6 +15,8 @@ public class Node extends Thread {
 
     private Node nextNode;
 
+    private Node previousNode;
+
     // Neighbouring nodes
     private List<Node> neighbours;
 
@@ -57,6 +59,14 @@ public class Node extends Thread {
 
     public void setNextNode(Node nextNode) {
         this.nextNode = nextNode;
+    }
+
+    public Node getPreviousNode() {
+        return previousNode;
+    }
+
+    public void setPreviousNode(Node previousNode) {
+        this.previousNode = previousNode;
     }
 
     public void setActive(boolean active) {
@@ -127,6 +137,34 @@ public class Node extends Thread {
                             }
 
                             break;
+
+                        case MessageCreator.FAIL_TAG:
+
+                            int failNodeId = MessageCreator.getFailedNodeIdFromFailMessage(parts);
+                            Node failNode = null;
+
+                            // Get the failed node from our neighbours
+                            for (Node node : this.neighbours){
+                                if (node.getNodeId() == failNodeId){
+                                    failNode = node;
+                                }
+                            }
+
+                            // Rearrange next/previous
+                            assert failNode != null;
+                            if (failNode.getNextNode() == this){
+                                this.previousNode = failNode.getPreviousNode();
+                            }
+
+                            if(failNode.getPreviousNode() == this){
+                                this.nextNode = failNode.getNextNode();
+                            }
+
+                            this.neighbours.remove(failNode);
+
+                            if (failNode.isNodeLeader()){
+                                this.startLeaderElection();
+                            }
                     }
 
                     iterator.remove();
@@ -165,6 +203,6 @@ public class Node extends Thread {
     }
 
     public void startLeaderElection(){
-        this.outgoingMessages.add(String.format("%s %d %d", MessageCreator.ELECTION_TAG, this.id, this.id));
+        this.outgoingMessages.add(MessageCreator.createElectMessage(this.id, this.id));
     }
 }

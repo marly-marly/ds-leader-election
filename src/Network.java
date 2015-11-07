@@ -24,6 +24,8 @@ public class Network {
 
     private HashMap<Integer, ArrayList<Action>> roundActions;
 
+    private ArrayList<Node> failures;
+
     private Logger logger;
 
     // Code to call methods for parsing the input file, initiating the system and producing the log can be added here.
@@ -32,6 +34,7 @@ public class Network {
         this.nodes = new HashMap<>();
         this.messagesToDeliver = new HashMap<>();
         this.roundActions = new HashMap<>();
+        this.failures = new ArrayList<>();
 
         try {
             this.parseFile("input.txt");
@@ -98,18 +101,7 @@ public class Network {
                         nodeId = Integer.valueOf(parts[1]);
                         node = this.addOrGetNodeWithId(nodeId);
 
-                        action = new Action("FAIL");
-                        action.addNode(node);
-
-                        // Add the action to the list of messages for the specific round
-                        round = Integer.valueOf(parts[1]);
-                        if (this.roundActions.containsKey(round)){
-                            this.roundActions.get(round).add(action);
-                        }else{
-                            ArrayList<Action> actions = new ArrayList<>();
-                            actions.add(action);
-                            this.roundActions.put(round, actions);
-                        }
+                        this.failures.add(node);
 
                         break;
 
@@ -132,6 +124,7 @@ public class Network {
 
                         if (lastNode != null){
                             lastNode.setNextNode(mainNode);
+                            mainNode.setPreviousNode(lastNode);
                         }
 
                         lastNode = mainNode;
@@ -142,6 +135,7 @@ public class Network {
 
             if (lastNode != null){
                 lastNode.setNextNode(firstNode);
+                firstNode.setPreviousNode(lastNode);
             }
         }
     }
@@ -185,23 +179,7 @@ public class Network {
             this.logger.log(String.format("-- Round %d starting", this.round));
 
             // Check if there's any action to take in this round
-            ArrayList<Action> actions = this.roundActions.get(round);
-            if (actions != null){
-                for (Action action : actions){
-
-                    switch(action.getType()){
-
-                        case MessageCreator.ELECTION_TAG:
-                            for (Node node : action.getNodes()){
-                                node.startLeaderElection();
-                            }
-
-                            break;
-                    }
-                }
-
-                this.roundActions.remove(round);
-            }
+            this.doActions(this.round);
 
             // Collect messages from each node
             for (Map.Entry<Integer, Node> entry : this.nodes.entrySet()) {
@@ -211,11 +189,27 @@ public class Network {
                 }
             }
 
-            // Break the loop if there are no more messages to deliver
+            // Start fail messages, or stop
             if (this.messagesToDeliver.size() == 0 && this.roundActions.size() == 0 && this.allNodesFinished()){
-                this.stopAllNodes();
-                this.logger.closeWriter();
-                break;
+                if (this.failures.size() == 0){
+
+                    // Stop and exit
+                    this.stopAllNodes();
+                    this.logger.closeWriter();
+                    break;
+                }else{
+
+                    // Make a new node fail
+                    Node failingNode = this.failures.get(0);
+                    this.failures.remove(failingNode);
+
+                    this.logger.log(String.format("Node %d FAILED", failingNode.getNodeId()));
+
+                    // Inform all neighbours about the failure
+                    for (Node neighbour : failingNode.getNeighbours()){
+                        neighbour.receiveMessage(MessageCreator.createFailMessage(failingNode.getNodeId()));
+                    }
+                }
             }
 
             // Send messages to "next" from each node
@@ -257,6 +251,7 @@ public class Network {
         }
     }
 
+    // Checks if all nodes are finished
     private boolean allNodesFinished(){
         boolean finished = true;
         for (Node node : this.nodes.values()){
@@ -264,6 +259,27 @@ public class Network {
         }
 
         return finished;
+    }
+
+    // Executes all actions in a specific round
+    private void doActions(int round){
+        ArrayList<Action> actions = this.roundActions.get(round);
+        if (actions != null){
+            for (Action action : actions){
+
+                switch(action.getType()){
+
+                    case MessageCreator.ELECTION_TAG:
+                        for (Node node : action.getNodes()){
+                            node.startLeaderElection();
+                        }
+
+                        break;
+                }
+            }
+
+            this.roundActions.remove(round);
+        }
     }
 
     public synchronized void informNodeFailure(int id) {
