@@ -44,7 +44,7 @@ public class Network {
 
         this.logger = Logger.getInstance();
 
-        // this.prepareInitialMessages();
+        // Start delivering messages
         this.deliverMessages();
     }
 
@@ -140,34 +140,29 @@ public class Network {
         }
     }
 
+    // Adds node to the hash-map if node doesn't exist, and returns it. Otherwise just returns it.
     private Node addOrGetNodeWithId(Integer id){
 
         Node node;
-        if (!nodes.containsKey(id)){
-            nodes.put(id, new Node(id));
-            node = nodes.get(id);
+        if (!this.nodes.containsKey(id)){
+            this.nodes.put(id, new Node(id));
+            node = this.nodes.get(id);
         }else{
-            node = nodes.get(id);
+            node = this.nodes.get(id);
         }
 
         return node;
     }
 
+    // At each round, the network collects all the messages that the nodes want to send to their neighbours.
     public synchronized void addMessage(int id, String message) {
-		/*
-		At each round, the network collects all the messages that the nodes want to send to their neighbours. 
-		Implement this logic here.
-		*/
-
+        
         this.messagesToDeliver.put(id, message);
     }
 
+    // At each round, the network delivers all the messages that it has collected from the nodes.
+    // The network must ensure that a node can send only to its neighbours, one message per round per neighbour.
     public synchronized void deliverMessages() {
-		/*
-		At each round, the network delivers all the messages that it has collected from the nodes.
-		Implement this logic here.
-		The network must ensure that a node can send only to its neighbours, one message per round per neighbour.
-		*/
 
         for (Node node : this.nodes.values()){
             node.start();
@@ -176,7 +171,7 @@ public class Network {
         while (true) {
 
             this.round++;
-            this.logger.log(String.format("-- Round %d starting", this.round));
+            System.out.println(String.format("\n-- Round %d starting", this.round));
 
             // Check if there's any action to take in this round
             this.doActions(this.round);
@@ -203,12 +198,15 @@ public class Network {
                     Node failingNode = this.failures.get(0);
                     this.failures.remove(failingNode);
 
-                    this.logger.log(String.format("Node %d FAILED", failingNode.getNodeId()));
+                    System.out.println(String.format("Node %d FAILED", failingNode.getNodeId()));
 
                     // Inform all neighbours about the failure
                     for (Node neighbour : failingNode.getNeighbours()){
                         neighbour.receiveMessage(MessageCreator.createFailMessage(failingNode.getNodeId()));
                     }
+
+                    // Kill failed node's thread
+                    failingNode.setActive(false);
                 }
             }
 
@@ -280,12 +278,6 @@ public class Network {
 
             this.roundActions.remove(round);
         }
-    }
-
-    public synchronized void informNodeFailure(int id) {
-		/*
-		Method to inform the neighbours of a failed node about the event.
-		*/
     }
 
     public static void main(String args[]) throws IOException, InterruptedException {

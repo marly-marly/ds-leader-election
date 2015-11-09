@@ -92,7 +92,7 @@ public class Node extends Thread {
                             int electionInitializerId = MessageCreator.getInitializerIdFromElectMessage(parts);
                             int incomingId = MessageCreator.getMaximumIdFromElectMessage(parts);
 
-                            this.logger.log(String.format("Node %d received election message with id %d. Initailizer: %d", this.id, incomingId, electionInitializerId));
+                            System.out.println(String.format("Node %d received election message with id %d.", this.id, incomingId));
 
                             if (!this.participant){
 
@@ -112,7 +112,7 @@ public class Node extends Thread {
                                     this.leader = true;
                                     this.outgoingMessages.add(MessageCreator.createLeaderMessage(electionInitializerId, this.id));
 
-                                    this.logger.log(String.format("Node %d is ELECTED as leader. Initailizer: %d", this.id, electionInitializerId));
+                                    this.logger.log(String.format("LEADER %d", this.id));
                                 }
 
                                 // If incoming ID is larger than ours, then send it
@@ -128,7 +128,7 @@ public class Node extends Thread {
                             int initializerId = MessageCreator.getInitializerIdFromLeaderMessage(parts);
                             int leaderId = MessageCreator.getLeaderIdFromLeaderMessage(parts);
 
-                            this.logger.log(String.format("Node %d received leader message with id %d. Initailizer: %d", this.id, leaderId, initializerId));
+                            System.out.println(String.format("Node %d received leader message with id %d.", this.id, leaderId));
 
                             // If the leader message hasn't made a full round yet, forward it
                             if(this.id != leaderId){
@@ -150,18 +150,43 @@ public class Node extends Thread {
                                 }
                             }
 
-                            // Rearrange next/previous
                             assert failNode != null;
-                            if (failNode.getNextNode() == this){
-                                this.previousNode = failNode.getPreviousNode();
+                            Node nextNodeOfFailedNode = failNode.getNextNode();
+                            Node previousNodeOfFailedNode = failNode.getPreviousNode();
+
+                            // Rearrange next node as well as neighbours
+                            if (nextNodeOfFailedNode == this){
+                                this.previousNode = previousNodeOfFailedNode;
+
+                                if(!this.neighbours.contains(previousNodeOfFailedNode)){
+
+                                    // If there were two nodes before the failure
+                                    if (previousNodeOfFailedNode == this){
+                                        this.nextNode = null;
+                                    }else{
+                                        this.neighbours.add(previousNodeOfFailedNode);
+                                    }
+                                }
                             }
 
-                            if(failNode.getPreviousNode() == this){
-                                this.nextNode = failNode.getNextNode();
+                            // Rearrange previous node as well as neighbours
+                            if(previousNodeOfFailedNode == this){
+                                this.nextNode = nextNodeOfFailedNode;
+
+                                if(!this.neighbours.contains(nextNodeOfFailedNode)){
+
+                                    // If there were two nodes before the failure
+                                    if (nextNodeOfFailedNode == this){
+                                        this.previousNode = null;
+                                    }else{
+                                        this.neighbours.add(nextNodeOfFailedNode);
+                                    }
+                                }
                             }
 
                             this.neighbours.remove(failNode);
 
+                            // If the failed node was a leader, then start a new leader election
                             if (failNode.isNodeLeader()){
                                 this.startLeaderElection();
                             }
@@ -173,8 +198,6 @@ public class Node extends Thread {
 
             this.finished = this.incomingMessages.size() == 0 && this.outgoingMessages.size() == 0;
         }
-
-        System.out.println((String.format("Node %d finished!", this.id)));
     }
 
     // Method that implements the reception of an incoming message by a node

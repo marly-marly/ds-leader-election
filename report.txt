@@ -1,0 +1,2 @@
+after node fails, start election from neighbours.
+if all nodes fail, algorithm stops.
