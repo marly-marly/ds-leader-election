@@ -172,9 +172,6 @@ public class Network {
             this.round++;
             System.out.println(String.format("\n-- Round %d starting", this.round));
 
-            // Check if there's any action to take in this round
-            this.doActions(this.round);
-
             // Check for stopping conditions
             if (this.messagesToDeliver.size() == 0 && this.roundActions.size() == 0 && this.allNodesFinished()){
 
@@ -201,6 +198,9 @@ public class Network {
                     failingNode.setActive(false);
                 }
             }
+
+            // Check if there's any action to take in this round
+            this.doActions(this.round);
 
             // Collect and deliver messages that need to be delivered in this round
             this.deliverMessages();
