@@ -22,6 +22,7 @@ public class Network {
 
     private HashMap<Integer, Node> nodes;
 
+    // Stores elections for each round. Note that multiple actions is allowed for one round.
     private HashMap<Integer, ArrayList<Action>> roundActions;
 
     private ArrayList<Node> failures;
@@ -44,8 +45,7 @@ public class Network {
 
         this.logger = Logger.getInstance();
 
-        // Start delivering messages
-        this.deliverMessages();
+        this.startNetwork();
     }
 
     // Notice that the method's descriptor must be defined.
@@ -154,16 +154,15 @@ public class Network {
         return node;
     }
 
-    // At each round, the network collects all the messages that the nodes want to send to their neighbours.
     public synchronized void addMessage(int id, String message) {
-        
+
         this.messagesToDeliver.put(id, message);
     }
 
-    // At each round, the network delivers all the messages that it has collected from the nodes.
-    // The network must ensure that a node can send only to its neighbours, one message per round per neighbour.
-    public synchronized void deliverMessages() {
+    // Starts all nodes, executes actions and failures, and manages the rounds.
+    public synchronized void startNetwork(){
 
+        // Fire up all the nodes
         for (Node node : this.nodes.values()){
             node.start();
         }
@@ -176,19 +175,12 @@ public class Network {
             // Check if there's any action to take in this round
             this.doActions(this.round);
 
-            // Collect messages from each node
-            for (Map.Entry<Integer, Node> entry : this.nodes.entrySet()) {
-                Node node = entry.getValue();
-                if (node.outgoingMessages.size() != 0){
-                    this.addMessage(node.getNodeId(), node.outgoingMessages.get(0));
-                }
-            }
-
-            // Start fail messages, or stop
+            // Check for stopping conditions
             if (this.messagesToDeliver.size() == 0 && this.roundActions.size() == 0 && this.allNodesFinished()){
+
+                // If there are no failures, then exit. Otherwise, deploy one failure at a time.
                 if (this.failures.size() == 0){
 
-                    // Stop and exit
                     this.stopAllNodes();
                     this.logger.closeWriter();
                     break;
@@ -210,36 +202,53 @@ public class Network {
                 }
             }
 
-            // Send messages to "next" from each node
-            Iterator iterator = this.messagesToDeliver.entrySet().iterator();
-            while(iterator.hasNext()) {
-                Map.Entry messagesToDeliverPair = (Map.Entry) iterator.next();
-                Integer senderId = (Integer) messagesToDeliverPair.getKey();
-                Node sender = this.nodes.get(senderId);
-                String message = (String) messagesToDeliverPair.getValue();
+            // Collect and deliver messages that need to be delivered in this round
+            this.deliverMessages();
 
-                sender.sendMessage(message);
-            }
-
-            // Receive messages
-            iterator = this.messagesToDeliver.entrySet().iterator();
-            while(iterator.hasNext()) {
-                Map.Entry messagesToDeliverPair = (Map.Entry) iterator.next();
-                Integer senderId = (Integer) messagesToDeliverPair.getKey();
-                Node sender = this.nodes.get(senderId);
-                String message = (String) messagesToDeliverPair.getValue();
-
-                Node nextNeighbour = sender.getNextNode();
-                nextNeighbour.receiveMessage(message);
-
-                iterator.remove();
-            }
-
+            // Simulate one round by sleeping
             try {
                 Thread.sleep(this.period);
             } catch (InterruptedException e) {
                 e.printStackTrace();
             }
+        }
+    }
+
+    // At each round, the network delivers all the messages that it has collected from the nodes.
+    // The network must ensure that a node can send only to its neighbours, one message per round per neighbour.
+    public synchronized void deliverMessages() {
+
+        // Collect messages from each node
+        for (Map.Entry<Integer, Node> entry : this.nodes.entrySet()) {
+            Node node = entry.getValue();
+            if (node.outgoingMessages.size() != 0){
+                this.addMessage(node.getNodeId(), node.outgoingMessages.get(0));
+            }
+        }
+
+        // Send messages to "next" from each node
+        Iterator iterator = this.messagesToDeliver.entrySet().iterator();
+        while(iterator.hasNext()) {
+            Map.Entry messagesToDeliverPair = (Map.Entry) iterator.next();
+            Integer senderId = (Integer) messagesToDeliverPair.getKey();
+            Node sender = this.nodes.get(senderId);
+            String message = (String) messagesToDeliverPair.getValue();
+
+            sender.sendMessage(message);
+        }
+
+        // Receive the messages that were just sent
+        iterator = this.messagesToDeliver.entrySet().iterator();
+        while(iterator.hasNext()) {
+            Map.Entry messagesToDeliverPair = (Map.Entry) iterator.next();
+            Integer senderId = (Integer) messagesToDeliverPair.getKey();
+            Node sender = this.nodes.get(senderId);
+            String message = (String) messagesToDeliverPair.getValue();
+
+            Node nextNeighbour = sender.getNextNode();
+            nextNeighbour.receiveMessage(message);
+
+            iterator.remove();
         }
     }
 
@@ -281,9 +290,7 @@ public class Network {
     }
 
     public static void main(String args[]) throws IOException, InterruptedException {
-		/*
-		Your main must get the input file as input.
-		*/
+
         Network network = new Network();
     }
 }

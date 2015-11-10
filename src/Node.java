@@ -125,7 +125,6 @@ public class Node extends Thread {
 
                         case MessageCreator.LEADER_TAG:
 
-                            int initializerId = MessageCreator.getInitializerIdFromLeaderMessage(parts);
                             int leaderId = MessageCreator.getLeaderIdFromLeaderMessage(parts);
 
                             System.out.println(String.format("Node %d received leader message with id %d.", this.id, leaderId));
@@ -210,14 +209,10 @@ public class Node extends Thread {
     }
 
     public void sendMessage(String message) {
-		/*
-		Method that implements the sending of a message by a node. 
-		The message must be delivered to its recipients through the network.
-		This method need only implement the logic of the network receiving an outgoing message from a node.
-		The remainder of the logic will be implemented in the network class.
-		*/
+
         this.outgoingMessages.remove(message);
 
+        // If we send out an election message, we become a participant
         String[] parts = message.split("\\s");
         String messageType = MessageCreator.getMessageType(parts);
         if (messageType.equals(MessageCreator.ELECTION_TAG)){
