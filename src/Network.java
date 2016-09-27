@@ -30,7 +30,7 @@ public class Network {
     private Logger logger;
 
     // Code to call methods for parsing the input file, initiating the system and producing the log can be added here.
-    public Network() {
+    public Network(String fileName) {
 
         this.nodes = new HashMap<>();
         this.messagesToDeliver = new HashMap<>();
@@ -38,7 +38,7 @@ public class Network {
         this.failures = new ArrayList<>();
 
         try {
-            this.parseFile("input.txt");
+            this.parseFile(fileName);
         } catch (IOException e) {
             e.printStackTrace();
         }
@@ -291,6 +291,7 @@ public class Network {
 
     public static void main(String args[]) throws IOException, InterruptedException {
 
-        Network network = new Network();
+        String fileName = args[0];
+        Network network = new Network(fileName);
     }
 }
